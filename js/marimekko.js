@@ -1,6 +1,6 @@
 const svgWidth = 900;
 const svgHeight = 500;
-const margin = { top: 40, right: 20, bottom: 60, left: 60 };
+const margin = { top: 40, right: 150, bottom: 60, left: 60 };
 const width = svgWidth - margin.left - margin.right;
 const height = svgHeight - margin.top - margin.bottom;
 
@@ -11,8 +11,10 @@ const svg = d3.select("#chart")
   .append("g")
   .attr("transform", `translate(${margin.left},${margin.top})`);
 
-// Cargar CSV
 d3.csv("data/Mental Health dataset.csv").then(data => {
+
+  // Definir tratamientos posibles
+  const treatments = ["Yes", "No"];
 
   // Contar ocurrencias de combinaciones Gender x Treatment
   const nested = d3.rollup(
@@ -22,56 +24,43 @@ d3.csv("data/Mental Health dataset.csv").then(data => {
     d => d.Treatment
   );
 
-  // Preparar datos en formato array
   const genders = Array.from(nested.keys());
-  const treatmentSet = new Set();
-  nested.forEach(tMap => tMap.forEach((v,k) => treatmentSet.add(k)));
-  const treatments = Array.from(treatmentSet);
 
+  // Preparar dataset con todos los tratamientos
   const dataset = [];
   nested.forEach((tMap, gender) => {
-    let total = d3.sum(Array.from(tMap.values()));
-    tMap.forEach((count, treatment) => {
-      dataset.push({
-        gender,
-        treatment,
-        count,
-        total
-      });
+    const total = d3.sum(Array.from(tMap.values()));
+    treatments.forEach(t => {
+      const count = tMap.get(t) || 0;
+      dataset.push({ gender, treatment: t, count, total });
     });
   });
 
   // Escalas
-  const xScale = d3.scaleLinear().range([0, width]);
-  const yScale = d3.scaleLinear().range([height, 0]);
-
-  // Calcular posiciones Marimekko
   const genderTotals = d3.rollup(dataset, v => d3.sum(v, d => d.count), d => d.gender);
   let xStart = 0;
   const rects = [];
+
   genders.forEach(g => {
     const genderWidth = (genderTotals.get(g) / d3.sum(Array.from(genderTotals.values()))) * width;
     let yStart = 0;
     treatments.forEach(t => {
       const d = dataset.find(dd => dd.gender === g && dd.treatment === t);
-      if(d){
-        const rectHeight = (d.count / d.total) * height;
-        rects.push({
-          x: xStart,
-          y: height - yStart - rectHeight,
-          width: genderWidth,
-          height: rectHeight,
-          gender: g,
-          treatment: t,
-          count: d.count
-        });
-        yStart += rectHeight;
-      }
+      const rectHeight = (d.count / d.total) * height;
+      rects.push({
+        x: xStart,
+        y: height - yStart - rectHeight,
+        width: genderWidth,
+        height: rectHeight,
+        gender: g,
+        treatment: t,
+        count: d.count
+      });
+      yStart += rectHeight;
     });
     xStart += genderWidth;
   });
 
-  // Colores
   const color = d3.scaleOrdinal()
     .domain(treatments)
     .range(d3.schemeCategory10);
@@ -88,7 +77,7 @@ d3.csv("data/Mental Health dataset.csv").then(data => {
     .attr("fill", d => color(d.treatment))
     .attr("stroke", "white");
 
-  // Etiquetas
+  // Etiquetas internas
   svg.selectAll(".rect-label")
     .data(rects)
     .enter()
@@ -116,19 +105,19 @@ d3.csv("data/Mental Health dataset.csv").then(data => {
 
   // Leyenda Treatment
   const legend = svg.append("g")
-    .attr("transform", `translate(${width + 10},0)`);
+    .attr("transform", `translate(${width + 20},0)`);
 
-  treatments.forEach((t,i) => {
+  treatments.forEach((t, i) => {
     legend.append("rect")
       .attr("x", 0)
-      .attr("y", i*20)
+      .attr("y", i * 25)
       .attr("width", 15)
       .attr("height", 15)
       .attr("fill", color(t));
 
     legend.append("text")
       .attr("x", 20)
-      .attr("y", i*20 + 12)
+      .attr("y", i * 25 + 12)
       .text(t);
   });
 
