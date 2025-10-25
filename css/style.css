@@ -1,0 +1,21 @@
+body {
+  font-family: sans-serif;
+}
+
+#chart {
+  width: 900px;
+  height: 500px;
+  margin: 30px auto;
+  position: relative;
+}
+
+.axis text {
+  font-size: 12px;
+}
+
+.rect-label {
+  fill: white;
+  font-size: 10px;
+  text-anchor: middle;
+  pointer-events: none;
+}
